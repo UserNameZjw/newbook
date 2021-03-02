@@ -8,6 +8,11 @@ use Swoole\Server;
 
 class AutoDown extends BookBase
 {
+    /**
+     * 自动更新程序
+     * @param Server $server
+     * @throws \GuzzleHttp\Exception\GuzzleException
+     */
     public function onAutoDown(Server $server)
     {
         $redis = $this->getRedisClient();
