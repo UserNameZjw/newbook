@@ -1,3 +1,5 @@
+简单的一个 think-swoole 的小例子.
+
 ThinkPHP 6.0
 ===============
 
