@@ -9,6 +9,7 @@ use Swoole\Server;
 class AutoDown extends BookBase
 {
     /**
+     *
      * 自动更新程序
      * 如果没有队列 则不执行
      * @param Server $server
