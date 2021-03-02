@@ -17,6 +17,7 @@ class AutoDown extends BookBase
     public function onAutoDown(Server $server)
     {
         $redis = $this->getRedisClient();
+        // 查询队列长度
         $llen  = $redis->llen('uplist');
         if($llen){
             $rows  = 2; // 进率
