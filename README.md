@@ -209,7 +209,7 @@ ___
 ##### 示例请求
 ```
 /v1/api/article?id=2428&section=1
-// /v1/api/article?id=[ 书籍id ]&section=[ id ]
+// /v1/api/article?id=[ 书籍id ]&section=[ 章节id ]
 ```
 
 #### 返回结果示例
