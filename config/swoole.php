@@ -54,16 +54,9 @@ return [
         'server' => [
             'enable'   => false,
             'port'     => 9666,
-            'services' => [
-                \app\rpc\interfaces\BookInterfaces::class,
-            ],
+            'services' => [],
         ],
-        'client' => [
-//            'book' =>[
-//                'host' => '127.0.0.1',
-//                'port' => 9666
-//            ]
-        ],
+        'client' => [],
     ],
     'hot_update' => [
         'enable'  => env('APP_DEBUG', false),

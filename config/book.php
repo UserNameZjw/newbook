@@ -7,9 +7,9 @@ return [
         'search'    =>  [
             'url'   =>  '/search.html',
             'param' =>  [ 'searchtype' => 'searchtype', 'searchkey' => 'searchkey' ],
-            'xpath' =>  [ 'xpath' => "//*[@class='librarylist']/li" ,'each' => true ],
+            'xpath' =>  [ 'xpath'      => "//*[@class='librarylist']/li" ,'each' => true ],
             'arr'   =>  [
-                            'id'    => [
+                            'id'       => [
                                 'xpath'     => [ 'xpath' => "//*[@class='novelname']" ,'each' => false ],
                                 'moth'      => "attr",
                                 'str'       => "href",
@@ -21,7 +21,7 @@ return [
                             'type'          => [ 'xpath' => "//*[@class='info']/span[3]/a" ,'each' => false ],// 类型
 
                             // 类型 url
-                            'typeUrl'      => [
+                            'typeUrl'       => [
                                 'xpath'     => [ 'xpath' =>  "//*[@class='info']/span[3]/a",'each' => false ],
                                 'moth'      => "attr",
                                 'str'       => "href",
@@ -30,7 +30,7 @@ return [
                             'section'       => ['xpath'  =>  "//*[@class='last']/a" ,'each' => false ],  // 最新章节
 
                             // 最新章节 url
-                            'sectionId'    => [
+                            'sectionId'     => [
                                 'xpath'     => ['xpath' =>  "//*[@class='last']/a" ,'each' => false ],
                                 'moth'      => "attr",
                                 'str'       => "href",
@@ -44,7 +44,7 @@ return [
         'details'  => [
             'url'  => [
                 'before'    => '/shu_',
-                'dataId'   => 'id',
+                'dataId'    => 'id',
                 'after'     => '/'
             ],
             'xpath' => [ 'xpath' => "//*[@class='w-left']" ,'each' => false ],
@@ -76,7 +76,7 @@ return [
                                     'each'  => true ,
                                     'arr'   => [
                                         'section'       => [ 'xpath' => "//*/a" ,'each' => false ],
-                                        'sectionId'    => [
+                                        'sectionId'     => [
                                             'xpath'     => ['xpath'  =>  "//*/a" ,'each' => false ],
                                             'moth'      => "attr",
                                             'str'       => "href",
@@ -91,7 +91,7 @@ return [
                                     'each'  => true ,
                                     'arr'   => [
                                         'section'       => [ 'xpath' => "//*/a" ,'each' => false ],
-                                        'sectionId'    => [
+                                        'sectionId'     => [
                                             'xpath'     => ['xpath' =>  "//*/a" ,'each' => false ],
                                             'moth'      => "attr",
                                             'str'       => "href",

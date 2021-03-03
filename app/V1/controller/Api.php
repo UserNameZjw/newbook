@@ -2,7 +2,6 @@
 namespace app\V1\controller;
 
 use app\proxy\controller\Proxy;
-use Swoole\Server;
 use think\facade\Request;
 
 

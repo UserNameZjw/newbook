@@ -41,7 +41,7 @@ class Timer
                         $title = $redis->hget($datas['config'].':'.$datas['id'],$datas['section']);
                         // 抓取内容存入redis
                         $redis->hsetnx($datas['config'].':'.$datas['id'].':'.$datas['section'],'title',$title);
-//                        $redis->hsetnx($datas['config'].':'.$datas['id'].':'.$datas['section'],'content',$back);
+                        // $redis->hsetnx($datas['config'].':'.$datas['id'].':'.$datas['section'],'content',$back);
                         $redis->hmset($datas['config'].':'.$datas['id'].':'.$datas['section'],$back);
 
                         echo $value.'数据处理成功'.PHP_EOL;
