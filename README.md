@@ -4,7 +4,7 @@
 #### 项目描述
 一个基于 think-swoole + redis 的小项目.
 
-1. Thinkphp6 + Swoole +think-swoole3 + Redis6 + Nginx
+1. Thinkphp6 + Swoole 4.6.2 +think-swoole3 + Redis6 + Nginx
 2. 可自定义的抓取规则，配置文件 config/book
 3. swoole go() 协程
 4. swoole go() 协程里 CURL
