@@ -16,11 +16,6 @@ class Api extends BookBase
         return json(['code' => false, 'msg' => '异常访问']);
     }
 
-    public function test(Server $server)
-    {
-//        $server->task(['time' => time()]);
-//        $server->task(['cmd' => 'book', 'time' => time()]);
-    }
 
     /**
      * 搜索接口
