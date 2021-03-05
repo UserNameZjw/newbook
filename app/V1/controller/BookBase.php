@@ -4,7 +4,6 @@
 namespace app\V1\controller;
 
 use Predis\Client as RedisClient;
-use think\App;
 use think\facade\Config;
 use think\facade\Request as TpRequest;
 use think\facade\Cache;
@@ -114,7 +113,7 @@ class BookBase
     /**
      * 循环某个节点 抓取对应内容
      * @param string $xpath    循环节点
-     * @param string $arr      数据模型字段抓取规则
+     * @param array $arr      数据模型字段抓取规则
      * @return array
      */
     public function getXpathEach($xpath,$arr)
@@ -128,8 +127,8 @@ class BookBase
                 // 循环模型 按照规则抓取
                 foreach ($arr as $key => $value){
 
-                    $moth   = !empty($value['moth']) ? $value['moth'] :'text';
-                    $str    = !empty($value['str']) ? $value['str'] :'';
+                    $moth  = !empty($value['moth']) ? $value['moth'] :'text';
+                    $str   = !empty($value['str']) ? $value['str'] :'';
                     // 如果是函数
                     if(!empty($value['fun'])){
                         // 如果函数传递的是 数组 则认定 name 和 param
@@ -324,8 +323,9 @@ class BookBase
 
     /**
      * 设置 $response
-     * @param object $response
+     * @param string $response
      */
+    
     public function setResponse ($response){
         $this->response = $response;
     }
