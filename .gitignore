@@ -1,6 +1,6 @@
 /.idea
 /.vscode
-/runtime
+runtime
 *.log
 *.pid
 .env
