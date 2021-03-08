@@ -57,8 +57,6 @@ class BookBase
     {
         $this->setUrl($urlBack['url']);
 
-//        $this->getHtmlClient($urlBack['url']);
-
         if($urlBack['flow']){
             $this->getHtmlFlow();
         } else {
@@ -283,7 +281,7 @@ class BookBase
      */
     public function getRedisClient()
     {
-        $redis = Cache::store('redis');
+        $redis = Cache::store();
 
         return $redis;
     }

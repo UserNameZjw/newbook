@@ -53,6 +53,7 @@ class Api extends BookBase
                     // 获取相关配置
                     $urlBack      = $this->getActionConfig(Request::action(),$data);
                     $back['list'] = $this->getHtmlList($urlBack);
+
                     $redis = $this->getRedisClient();
                     foreach ($back['list'] as $key => $value){
 

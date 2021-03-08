@@ -14,9 +14,14 @@ return [
             'log_file'              => runtime_path() . 'swoole.log',
             'daemonize'             => false,
             // Normally this value should be 1~4 times larger according to your cpu cores.
-            'reactor_num'           => swoole_cpu_num(),
-            'worker_num'            => swoole_cpu_num(),
-            'task_worker_num'       => swoole_cpu_num(),
+            // 'reactor_num'           => swoole_cpu_num(),
+            // 'worker_num'            => swoole_cpu_num(),
+            // 'task_worker_num'       => swoole_cpu_num(),
+
+            'reactor_num'           => 2,
+            'worker_num'            => 4,
+            'task_worker_num'       => 200,
+
             'enable_static_handler' => true,
             'document_root'         => root_path('public'),
             'package_max_length'    => 20 * 1024 * 1024,
@@ -67,13 +72,13 @@ return [
     //连接池
     'pool'       => [
         'db'    => [
-            'enable'        => true,
+            'enable'        => false,
             'max_active'    => 3,
             'max_wait_time' => 5,
         ],
         'cache' => [
             'enable'        => true,
-            'max_active'    => 3,
+            'max_active'    => 64,
             'max_wait_time' => 5,
         ],
         //自定义连接池
