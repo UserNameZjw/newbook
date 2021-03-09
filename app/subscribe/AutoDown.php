@@ -20,7 +20,7 @@ class AutoDown extends BookBase
         // 查询队列长度
         $llen  = $redis->llen('uplist');
         if($llen){
-            $rows  = 2; // 进率
+            $rows  = config('bookconfig')['AutoDown']['rows']; // 进率
             $page  = 0;
             $limt  = $rows;
             $i     = ceil($llen/$rows);

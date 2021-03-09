@@ -17,12 +17,12 @@ class Timer
     {
         $i = 0 ;
         $bookBase = new BookBase();
-
-        swoole_timer_tick(1000,function ($timer_id) use (&$i,$bookBase){
+        
+        swoole_timer_tick(config('bookconfig')['Timer']['tally'],function ($timer_id) use (&$i,$bookBase){
             go(function() use (&$i,$timer_id,$bookBase){
                 
                 $redis = $bookBase->getRedisClient();
-                $queue = $redis->zrange('queue',0,10);
+                $queue = $redis->zrange('queue',0,config('bookconfig')['Timer']['rows']);
     
                 if(!empty($queue)){
                     $i = 0;

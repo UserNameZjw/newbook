@@ -92,7 +92,7 @@ class BookBase
                     }
                 } else {
                     //结构化数据存本数组
-                    $crawler    = new Crawler();
+                    $crawler = new Crawler();
                     $crawler->addHtmlContent($this->response);
                     // 如果是循环。
                     if($value['each']) {
@@ -118,7 +118,7 @@ class BookBase
     {
         $list = [];
         //结构化数据存本数组
-        $crawler  = new Crawler();
+        $crawler = new Crawler();
         $crawler->addHtmlContent($this->response);
         $crawler->filterXPath($xpath)
             ->each(function (Crawler $node, $i) use (&$list,$arr) {
@@ -184,7 +184,7 @@ class BookBase
 
 
     /**
-     * task 专属调用
+     * swoole 抓取使用
      * @param array $config  配置规则
      * @param mixed $arr
      */
@@ -192,7 +192,7 @@ class BookBase
     {
         // 本模式仅适用于 swoole task 自动任务采集所有文章内容时使用。
         // 用定时器实现队列功能
-        $barrier = Barrier::make();
+        $barrier  = Barrier::make();
         $response = [];
 
         go(function () use ($barrier,&$response) {
@@ -237,7 +237,7 @@ class BookBase
         $data['config'] = !empty($data['config']) ? $data['config'] : Config::get('book')['default'];
 
         // 获取 标识 配置
-        $config = Config::get('book')[$data['config']];
+        $config       = Config::get('book')[$data['config']];
         // 获取当前 方法 配置
         $actionConfig = $config[$action];
         $urlParam     = '';
