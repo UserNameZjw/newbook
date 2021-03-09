@@ -3,16 +3,12 @@
 
 namespace app\V1\controller;
 
-use Predis\Client as RedisClient;
+
 use think\facade\Config;
 use think\facade\Request as TpRequest;
 use think\facade\Cache;
-
-use GuzzleHttp\Client;
-use GuzzleHttp\HandlerStack;
 use Symfony\Component\DomCrawler\Crawler;
-use Yurun\Util\Swoole\Guzzle\SwooleHandler;
-
+use Yurun\Util\HttpRequest;
 use Swoole\Coroutine\Barrier;
 
 class BookBase
@@ -23,35 +19,18 @@ class BookBase
 
     /**
      * 统一配置
-     * @param mixed $config  额外配置
-     * @return Client
+     * @return HttpRequest
      */
-    protected function client($config = []){
-
-        $conf = [
-            'timeout' => 10,
-            'headers' => [
-                'User-Agent'        => 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/87.0.4280.88 Safari/537.36 Edg/87.0.664.57',
-                'Content-Type'      => 'text/plain; charset=utf-8',
-                'Accept-Language'   => 'zh-CN,zh-TW;q=0.9,zh;q=0.8,en;q=0.7,en-GB;q=0.6,en-US;q=0.5',
-            ]
-        ];
-
-        if(!empty($config)){
-            foreach ($config as $key => $value){
-                $conf = array_merge($conf,$value);
-            }
-        }
-
-        $client  = new Client($conf);
-        return $client;
+    protected function client(){
+        $http = new HttpRequest;
+        
+        return $http;
     }
 
     /**
      * 获取搜索列表
      * @param string $urlBack 配置规则
      * @param array $arr 页面数据，主要是task ，其他不需要
-     * @throws \GuzzleHttp\Exception\GuzzleException
      */
     public function getHtmlList($urlBack,$arr = [])
     {
@@ -72,7 +51,6 @@ class BookBase
      * @param object $xpath 最外围 xpath
      * @param array  $arr   规则配置
      * @return array
-     * @throws \GuzzleHttp\Exception\GuzzleException
      */
 
     public function getAll($xpath,$config,$data = [])
@@ -169,24 +147,26 @@ class BookBase
 
     /**
      * @param string $url  需要抓取页面的url
-     * @param bool   $code 是否全局变量
      * @param string $meth 请求方式
      * @param array  $data 需要发送的数据
-     * @return string
-     * @throws \GuzzleHttp\Exception\GuzzleException
      */
-    public function getHtmlClient($url,$meth = 'GET',$data = [])
+    public function getHtmlClient($url,$meth = 'get',$data = [])
     {
+
         $this->setUrl($url);
-        $response = $this->client()->request($meth, $this->url,$data)->getBody()->getContents();
+        try {
+            $response = $this->client()->{$meth}($this->url,$data)->body();
+        } catch (\Exception $e){
+            echo 'client'.$e->getMessage();
+        }
+
         $this->setResponse($response);
     }
 
 
     /**
      * swoole 抓取使用
-     * @param array $config  配置规则
-     * @param mixed $arr
+     * @throws \Swoole\Exception
      */
     public function getHtmlFlow()
     {
@@ -194,24 +174,14 @@ class BookBase
         // 用定时器实现队列功能
         $barrier  = Barrier::make();
         $response = [];
-
+        
         go(function () use ($barrier,&$response) {
-
-            $handler = new SwooleHandler();
-            $stack   = HandlerStack::create($handler);
-
-            $client  = new Client([
-                'handler' => $stack,
-                'verify'  => false
-            ]);
-
-            $response = $client->request('GET',$this->url)->getBody()->getContents();
+            $response = $this->client()->get($this->url)->body();
         });
 
         Barrier::wait($barrier);
 
         $this->setResponse($response);
-
     }
 
 
@@ -277,12 +247,11 @@ class BookBase
 
     /**
      * 获取 redis 类 方便配置
-     * @return RedisClient
+     * @return \think\cache\Driver
      */
     public function getRedisClient()
     {
         $redis = Cache::store();
-
         return $redis;
     }
 
@@ -323,7 +292,6 @@ class BookBase
      * 设置 $response
      * @param string $response
      */
-    
     public function setResponse ($response){
         $this->response = $response;
     }
@@ -332,7 +300,8 @@ class BookBase
     /**
      * unicode 解码
      * @param $data
-     * @return string|string[]|null
+     * @return mixed
+     * @param $data
      */
     public function unicodeDecode($data)
     {

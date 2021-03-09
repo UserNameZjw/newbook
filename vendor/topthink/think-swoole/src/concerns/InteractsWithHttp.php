@@ -99,7 +99,7 @@ trait InteractsWithHttp
      */
     public function onRequest($req, $res)
     {
-        $this->waitEvent('workerStart');
+        $this->waitCoordinator('workerStart');
 
         $args = func_get_args();
         $this->runInSandbox(function (Http $http, Event $event, App $app, Middleware $middleware) use ($args, $req, $res) {
@@ -188,7 +188,7 @@ trait InteractsWithHttp
         foreach ($cookie->getCookie() as $name => $val) {
             [$value, $expire, $option] = $val;
 
-            $res->cookie($name, $value, $expire, $option['path'], $option['domain'], $option['secure'] ? true : false, $option['httponly'] ? true : false);
+            $res->cookie($name, $value, $expire, $option['path'], $option['domain'], $option['secure'] ? true : false, $option['httponly'] ? true : false, $option['samesite']);
         }
 
         $content = $response->getContent();

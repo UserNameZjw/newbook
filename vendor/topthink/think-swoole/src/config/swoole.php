@@ -1,7 +1,6 @@
 <?php
 
 use think\swoole\websocket\socketio\Handler;
-use think\swoole\websocket\socketio\Parser;
 
 return [
     'server'     => [
@@ -27,7 +26,6 @@ return [
     'websocket'  => [
         'enable'        => false,
         'handler'       => Handler::class,
-        'parser'        => Parser::class,
         'ping_interval' => 25000,
         'ping_timeout'  => 60000,
         'room'          => [

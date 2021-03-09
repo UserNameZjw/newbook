@@ -19,9 +19,8 @@ class BookTask extends BookBase
     public function index($data)
     {
 
-        $data = $data['data'];
+        $data   = $data['data']['form_params'];
         $config = $data['config'];
-
         foreach ($data['data'] as $key => $value){
             // 协程录入所有 查询出来的书籍列表
             go(function () use ($config,$value){

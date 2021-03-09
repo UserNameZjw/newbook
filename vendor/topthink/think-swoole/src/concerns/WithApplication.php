@@ -6,7 +6,6 @@ use Closure;
 use Swoole\Server;
 use think\App;
 use think\swoole\App as SwooleApp;
-use think\swoole\Coordinator;
 use think\swoole\pool\Cache;
 use think\swoole\pool\Db;
 use think\swoole\Sandbox;
@@ -19,10 +18,7 @@ use Throwable;
  */
 trait WithApplication
 {
-    protected $waitEvents = [
-        'workerStart',
-        'workerExit',
-    ];
+    use InteractsWithCoordinator;
 
     /**
      * @var SwooleApp
@@ -41,32 +37,13 @@ trait WithApplication
     }
 
     /**
-     * @param string $name
-     * @return Coordinator
-     */
-    public function getCoordinator(string $name)
-    {
-        $abstract = "coordinator.{$name}";
-        if (!$this->container->has($abstract)) {
-            $this->container->bind($abstract, function () {
-                return new Coordinator();
-            });
-        }
-
-        return $this->container->make($abstract);
-    }
-
-    /**
      * 触发事件
-     * @param $event
-     * @param $params
+     * @param string $event
+     * @param null $params
      */
     protected function triggerEvent(string $event, $params = null): void
     {
         $this->container->event->trigger("swoole.{$event}", $params);
-        if (in_array($event, $this->waitEvents)) {
-            $this->getCoordinator($event)->resume();
-        }
     }
 
     /**
@@ -80,17 +57,6 @@ trait WithApplication
         $this->container->event->listen("swoole.{$event}", $listener, $first);
     }
 
-    /**
-     * 等待事件
-     * @param string $event
-     * @param int $timeout
-     * @return bool
-     */
-    protected function waitEvent(string $event, $timeout = -1): bool
-    {
-        return $this->getCoordinator($event)->yield($timeout);
-    }
-
     protected function prepareApplication()
     {
         if (!$this->app instanceof SwooleApp) {
@@ -101,6 +67,9 @@ trait WithApplication
             //绑定连接池
             if ($this->getConfig('pool.db.enable', true)) {
                 $this->app->bind('db', Db::class);
+                $this->app->resolving(Db::class, function (Db $db) {
+                    $db->setLog($this->container->log);
+                });
             }
             if ($this->getConfig('pool.cache.enable', true)) {
                 $this->app->bind('cache', Cache::class);

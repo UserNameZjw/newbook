@@ -19,7 +19,6 @@ class Api extends BookBase
     /**
      * 搜索接口
      * @return \think\response\Json
-     * @throws \GuzzleHttp\Exception\GuzzleException
      */
     public function search()
     {
@@ -53,7 +52,6 @@ class Api extends BookBase
                     // 获取相关配置
                     $urlBack      = $this->getActionConfig(Request::action(),$data);
                     $back['list'] = $this->getHtmlList($urlBack);
-
                     $redis = $this->getRedisClient();
                     foreach ($back['list'] as $key => $value){
 
@@ -71,17 +69,17 @@ class Api extends BookBase
 
 
                         // 设置一次3个月有效期的 key 用于更新本地redis 书籍搜索
-                        $redis->setex($data['config'].':searchEx:'.md5($data['searchkey']),7257600,true);
-                        $redis->sadd($data['config'].':search:'.md5($data['searchkey']),$value['id']);
+                         $redis->setex($data['config'].':searchEx:'.md5($data['searchkey']),7257600,true);
+                         $redis->sadd($data['config'].':search:'.md5($data['searchkey']),$value['id']);
 
-                        $redis->lpush('uplist',$data['config'].':config:'.$value['id']);
+                         $redis->lpush('uplist',$data['config'].':config:'.$value['id']);
 
-                        try {
-                            // 投递到 task
-                            $this->bookTask($arr);
-                        } catch (\Exception $e){
-                            $back['msg'] = 'task 异常'.$e->getMessage();
-                        }
+                         // 投递到 task
+                         try {
+                             $this->bookTask($arr);
+                         } catch (\Exception $e){
+                             $back['msg'] = 'task 异常'.$e->getMessage();
+                         }
 
                     }
                 } else {
@@ -227,14 +225,12 @@ class Api extends BookBase
     /**
      * 在被搜索时 就投递任务到 task 后台处理所有采集 避免耗时
      * @return bool
-     * @throws \GuzzleHttp\Exception\GuzzleException
      */
     public function bookTask($data = [])
     {
         // 设置反代
         $proxy = new Proxy();
         $host= $this->getHost();
-
         $back = $proxy->proxyMian($host['host'],$host['port'],'bookTask',$data);
 
         return $back;

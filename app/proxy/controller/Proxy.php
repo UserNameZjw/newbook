@@ -51,7 +51,7 @@ class Proxy
     public function run(){
 
         $bookBase = new BookBase();
-        $url = $this->host.':'.$this->port.$this->path.$this->meth;
+        $url = 'http://'.$this->host.':'.$this->port.$this->path.$this->meth;
         $data = [
             'form_params' => $this->data
         ];
@@ -67,8 +67,8 @@ class Proxy
      */
     public function bookTask(Server $server)
     {
-        $post = Request::post();
 
+        $post = Request::post();
         $server->task(['cmd' => 'book', 'data' => $post]);
     }
 

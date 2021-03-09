@@ -3,22 +3,15 @@
 namespace think\swoole\concerns;
 
 use Swoole\Http\Request;
-use Swoole\Server\Task;
 use Swoole\Websocket\Frame;
 use Swoole\Websocket\Server;
 use think\App;
 use think\Container;
-use think\Event;
 use think\helper\Str;
-use think\Pipeline;
-use think\swoole\contract\websocket\HandlerInterface;
-use think\swoole\contract\websocket\ParserInterface;
 use think\swoole\contract\websocket\RoomInterface;
+use think\swoole\Middleware;
 use think\swoole\Websocket;
-use think\swoole\websocket\Pusher;
 use think\swoole\websocket\Room;
-use think\swoole\websocket\socketio\Handler;
-use think\swoole\websocket\socketio\Parser as SocketioParser;
 
 /**
  * Trait InteractsWithWebsocket
@@ -55,20 +48,14 @@ trait InteractsWithWebsocket
      */
     public function onOpen($server, $req)
     {
-        $this->waitEvent('workerStart');
+        $this->waitCoordinator('workerStart');
 
-        /** @var Websocket $websocket */
-        $websocket = $this->app->make(Websocket::class);
-        $websocket->setSender($req->fd);
-
-        $this->runInSandbox(function (Event $event, HandlerInterface $handler, App $app) use ($req) {
+        $this->runInSandbox(function (App $app, Websocket $websocket) use ($req) {
             $request = $this->prepareRequest($req);
             $app->instance('request', $request);
             $request = $this->setRequestThroughMiddleware($app, $request);
-
-            if (!$handler->onOpen($req->fd, $request)) {
-                $event->trigger("swoole.websocket.Connect", $request);
-            }
+            $websocket->setSender($req->fd);
+            $websocket->onOpen($req->fd, $request);
         }, $req->fd, true);
     }
 
@@ -80,20 +67,9 @@ trait InteractsWithWebsocket
      */
     public function onMessage($server, $frame)
     {
-        /** @var Websocket $websocket */
-        $websocket = $this->app->make(Websocket::class);
-        $websocket->setSender($frame->fd);
-
-        $this->runInSandbox(function (Event $event, ParserInterface $parser, HandlerInterface $handler) use ($frame) {
-            if (!$handler->onMessage($frame)) {
-                $payload = $parser->decode($frame);
-
-                ['event' => $name, 'data' => $data] = $payload;
-                $name = Str::studly($name);
-                if (!in_array($name, ['Close', 'Connect'])) {
-                    $event->trigger("swoole.websocket." . $name, $data);
-                }
-            }
+        $this->runInSandbox(function (Websocket $websocket) use ($frame) {
+            $websocket->setSender($frame->fd);
+            $websocket->onMessage($frame);
         }, $frame->fd, true);
     }
 
@@ -106,19 +82,14 @@ trait InteractsWithWebsocket
      */
     public function onClose($server, $fd, $reactorId)
     {
-        if (!$this->isWebsocketServer($fd) || !$server instanceof Server) {
+        if (!$server instanceof Server || !$this->isWebsocketServer($fd)) {
             return;
         }
 
-        /** @var Websocket $websocket */
-        $websocket = $this->app->make(Websocket::class);
-        $websocket->setSender($fd);
-
-        $this->runInSandbox(function (Event $event, HandlerInterface $handler) use ($websocket, $fd, $reactorId) {
+        $this->runInSandbox(function (Websocket $websocket) use ($fd, $reactorId) {
+            $websocket->setSender($fd);
             try {
-                if (!$handler->onClose($fd, $reactorId)) {
-                    $event->trigger("swoole.websocket.Close");
-                }
+                $websocket->onClose($fd, $reactorId);
             } finally {
                 // leave all rooms
                 $websocket->leave();
@@ -133,21 +104,9 @@ trait InteractsWithWebsocket
      */
     protected function setRequestThroughMiddleware(App $app, \think\Request $request)
     {
-        $middleware = $this->getConfig('websocket.middleware', []);
-
-        return (new Pipeline())
+        return Middleware::make($app, $this->getConfig('websocket.middleware', []))
+            ->pipeline()
             ->send($request)
-            ->through(array_map(function ($middleware) use ($app) {
-                return function ($request, $next) use ($app, $middleware) {
-                    if (is_array($middleware)) {
-                        [$middleware, $param] = $middleware;
-                    }
-                    if (is_string($middleware)) {
-                        $middleware = [$app->make($middleware), 'handle'];
-                    }
-                    return call_user_func($middleware, $request, $next, $param ?? null);
-                };
-            }, $middleware))
             ->then(function ($request) {
                 return $request;
             });
@@ -168,7 +127,6 @@ trait InteractsWithWebsocket
 
         $this->onEvent('workerStart', function () {
             $this->bindWebsocketRoom();
-            $this->bindWebsocketParser();
             $this->bindWebsocketHandler();
             $this->prepareWebsocketListener();
         });
@@ -209,37 +167,17 @@ trait InteractsWithWebsocket
         foreach ($subscribers as $subscriber) {
             $this->app->event->observe($subscriber, 'swoole.websocket.');
         }
-
-        //消息推送任务
-        $this->app->event->listen('swoole.task', function (Task $task, App $app) {
-            if ($this->isWebsocketPushPayload($task->data)) {
-                $pusher = $app->make(Pusher::class, $task->data['data']);
-                $pusher->push();
-            }
-        });
     }
 
     /**
-     * Prepare websocket handler for onOpen and onClose callback.
-     *
-     * @throws \Exception
+     * Prepare websocket handler for onOpen and onClose callback
      */
     protected function bindWebsocketHandler()
     {
-        $handlerClass = $this->getConfig('websocket.handler', Handler::class);
-
-        $this->app->bind(HandlerInterface::class, $handlerClass);
-
-        $this->app->make(HandlerInterface::class);
-    }
-
-    protected function bindWebsocketParser()
-    {
-        $parserClass = $this->getConfig('websocket.parser', SocketioParser::class);
-
-        $this->app->bind(ParserInterface::class, $parserClass);
-
-        $this->app->make(ParserInterface::class);
+        $handlerClass = $this->getConfig('websocket.handler');
+        if ($handlerClass && is_subclass_of($handlerClass, Websocket::class)) {
+            $this->app->bind(Websocket::class, $handlerClass);
+        }
     }
 
     /**
@@ -250,21 +188,4 @@ trait InteractsWithWebsocket
         $this->app->instance(Room::class, $this->websocketRoom);
     }
 
-    /**
-     * Indicates if the payload is websocket push.
-     *
-     * @param mixed $payload
-     *
-     * @return boolean
-     */
-    public function isWebsocketPushPayload($payload): bool
-    {
-        if (!is_array($payload)) {
-            return false;
-        }
-
-        return $this->isWebsocketServer
-            && ($payload['action'] ?? null) === Websocket::PUSH_ACTION
-            && array_key_exists('data', $payload);
-    }
 }

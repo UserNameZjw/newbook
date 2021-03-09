@@ -2,13 +2,15 @@
 
 namespace think\swoole\rpc\server;
 
-use Exception;
 use ReflectionClass;
+use ReflectionException;
 use ReflectionMethod;
 use ReflectionNamedType;
+use RuntimeException;
 use Swoole\Server;
 use think\App;
 use think\swoole\contract\rpc\ParserInterface;
+use think\swoole\Middleware;
 use think\swoole\rpc\Error;
 use think\swoole\rpc\File;
 use think\swoole\rpc\Packer;
@@ -42,8 +44,6 @@ class Dispatcher
      */
     const INTERNAL_ERROR = -32603;
 
-    protected $app;
-
     protected $parser;
 
     protected $services = [];
@@ -52,18 +52,20 @@ class Dispatcher
 
     protected $files = [];
 
-    public function __construct(App $app, ParserInterface $parser, Server $server, $services)
+    protected $middleware = [];
+
+    public function __construct(ParserInterface $parser, Server $server, $services, $middleware = [])
     {
-        $this->app    = $app;
         $this->parser = $parser;
         $this->server = $server;
         $this->prepareServices($services);
+        $this->middleware = $middleware;
     }
 
     /**
      * 获取服务接口
      * @param $services
-     * @throws \ReflectionException
+     * @throws ReflectionException
      */
     protected function prepareServices($services)
     {
@@ -136,51 +138,65 @@ class Dispatcher
 
     /**
      * 调度
-     * @param int         $fd
-     * @param string|File $data
+     * @param App $app
+     * @param int $fd
+     * @param string|File|Error $data
      */
-    public function dispatch(int $fd, $data)
+    public function dispatch(App $app, int $fd, $data)
     {
-        if ($data instanceof File) {
-            $this->files[$fd][] = $data;
-        } else {
-            try {
-                if ($data === Protocol::ACTION_INTERFACE) {
+        try {
+            switch (true) {
+                case $data instanceof File:
+                    $this->files[$fd][] = $data;
+                    return;
+                case $data instanceof Error:
+                    $result = $data;
+                    break;
+                case $data === Protocol::ACTION_INTERFACE:
                     $result = $this->getInterfaces();
-                } else {
+                    break;
+                default:
                     $protocol = $this->parser->decode($data);
-
-                    $interface = $protocol->getInterface();
-                    $method    = $protocol->getMethod();
-                    $params    = $protocol->getParams();
-
-                    //文件参数
-                    foreach ($params as $index => $param) {
-                        if ($param === Protocol::FILE) {
-                            $params[$index] = array_shift($this->files[$fd]);
-                        }
-                    }
-
-                    $service = $this->services[$interface] ?? null;
-                    if (empty($service)) {
-                        throw new Exception(
-                            sprintf('Service %s is not founded!', $interface),
-                            self::INVALID_REQUEST
-                        );
-                    }
-
-                    $result = $this->app->invoke([$this->app->make($service['class']), $method], $params);
-                }
-            } catch (Throwable | Exception $e) {
-                $result = Error::make($e->getCode(), $e->getMessage());
+                    $result   = $this->dispatchWithMiddleware($app, $protocol, $fd);
             }
-
-            $data = $this->parser->encodeResponse($result);
-
-            $this->server->send($fd, Packer::pack($data));
-            //清空文件缓存
-            unset($this->files[$fd]);
+        } catch (Throwable $e) {
+            $result = Error::make($e->getCode(), $e->getMessage());
         }
+
+        $data = $this->parser->encodeResponse($result);
+
+        $this->server->send($fd, Packer::pack($data));
+        //清空文件缓存
+        unset($this->files[$fd]);
     }
 
+    protected function dispatchWithMiddleware(App $app, Protocol $protocol, $fd)
+    {
+        return Middleware::make($app, $this->middleware)
+            ->pipeline()
+            ->send($protocol)
+            ->then(function (Protocol $protocol) use ($app, $fd) {
+
+                $interface = $protocol->getInterface();
+                $method    = $protocol->getMethod();
+                $params    = $protocol->getParams();
+
+                //文件参数
+                foreach ($params as $index => $param) {
+                    if ($param === Protocol::FILE) {
+                        $params[$index] = array_shift($this->files[$fd]);
+                    }
+                }
+
+                $service = $this->services[$interface] ?? null;
+                if (empty($service)) {
+                    throw new RuntimeException(
+                        sprintf('Service %s is not founded!', $interface),
+                        self::METHOD_NOT_FOUND
+                    );
+                }
+
+                return $app->invoke([$app->make($service['class']), $method], $params);
+            });
+    }
 }

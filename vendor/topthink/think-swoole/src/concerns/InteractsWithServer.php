@@ -13,6 +13,7 @@ use think\Event;
 use think\exception\Handle;
 use think\helper\Str;
 use think\swoole\FileWatcher;
+use think\swoole\Job;
 use Throwable;
 
 /**
@@ -85,18 +86,20 @@ trait InteractsWithServer
      */
     public function onWorkerStart($server)
     {
-        Runtime::enableCoroutine(
-            $this->getConfig('coroutine.enable', true),
-            $this->getConfig('coroutine.flags', SWOOLE_HOOK_ALL)
-        );
+        $this->resumeCoordinator('workerStart', function () use ($server) {
+            Runtime::enableCoroutine(
+                $this->getConfig('coroutine.enable', true),
+                $this->getConfig('coroutine.flags', SWOOLE_HOOK_ALL)
+            );
 
-        $this->clearCache();
+            $this->clearCache();
 
-        $this->setProcessName($server->taskworker ? 'task process' : 'worker process');
+            $this->setProcessName($server->taskworker ? 'task process' : 'worker process');
 
-        $this->prepareApplication();
+            $this->prepareApplication();
 
-        $this->triggerEvent("workerStart", $this->app);
+            $this->triggerEvent("workerStart", $this->app);
+        });
     }
 
     /**
@@ -107,8 +110,18 @@ trait InteractsWithServer
      */
     public function onTask($server, Task $task)
     {
-        $this->runInSandbox(function (Event $event) use ($task) {
-            $event->trigger('swoole.task', $task);
+        $this->runInSandbox(function (Event $event, App $app) use ($task) {
+            if ($task->data instanceof Job) {
+                if (is_array($task->data->name)) {
+                    [$class, $method] = $task->data->name;
+                    $object = $app->invokeClass($class, $task->data->params);
+                    $object->{$method}();
+                } else {
+                    $app->invoke($task->data->name, $task->data->params);
+                }
+            } else {
+                $event->trigger('swoole.task', $task);
+            }
         }, $task->id);
     }
 
@@ -158,7 +171,7 @@ trait InteractsWithServer
             $watcher->watch(function () {
                 $this->getServer()->reload();
             });
-        }, false, 0);
+        }, false, 0, true);
 
         $this->addProcess($process);
     }

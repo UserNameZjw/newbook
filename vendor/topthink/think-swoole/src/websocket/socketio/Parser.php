@@ -2,44 +2,73 @@
 
 namespace think\swoole\websocket\socketio;
 
-use think\swoole\contract\websocket\ParserInterface;
-
-class Parser implements ParserInterface
+class Parser
 {
 
-    /**
-     * Encode output payload for websocket push.
-     *
-     * @param string $event
-     * @param mixed  $data
-     *
-     * @return mixed
-     */
-    public function encode(string $event, $data)
+    public static function encode(Packet $packet)
     {
-        $packet       = Packet::MESSAGE . Packet::EVENT;
-        $shouldEncode = is_array($data) || is_object($data);
-        $data         = $shouldEncode ? json_encode($data) : $data;
-        $format       = $shouldEncode ? '["%s",%s]' : '["%s","%s"]';
+        $str = '' . $packet->type;
+        if ($packet->nsp && '/' !== $packet->nsp) {
+            $str .= $packet->nsp . ',';
+        }
 
-        return $packet . sprintf($format, $event, $data);
+        if ($packet->id !== null) {
+            $str .= $packet->id;
+        }
+
+        if (null !== $packet->data) {
+            $str .= json_encode($packet->data, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+        }
+        return $str;
     }
 
-    /**
-     * Decode message from websocket client.
-     * Define and return payload here.
-     *
-     * @param \Swoole\Websocket\Frame $frame
-     *
-     * @return array
-     */
-    public function decode($frame)
+    public static function decode(string $str)
     {
-        $payload = Packet::getPayload($frame->data);
+        $i = 0;
 
-        return [
-            'event' => $payload['event'] ?? null,
-            'data'  => $payload['data'] ?? null,
-        ];
+        $packet = new Packet((int) substr($str, 0, 1));
+
+        // look up namespace (if any)
+        if ('/' === substr($str, $i + 1, 1)) {
+            $nsp = '';
+            while (++$i) {
+                $c = substr($str, $i, 1);
+                if (',' === $c) {
+                    break;
+                }
+                $nsp .= $c;
+                if ($i === strlen($str)) {
+                    break;
+                }
+            }
+            $packet->nsp = $nsp;
+        } else {
+            $packet->nsp = '/';
+        }
+
+        // look up id
+        $next = substr($str, $i + 1, 1);
+        if ('' !== $next && is_numeric($next)) {
+            $id = '';
+            while (++$i) {
+                $c = substr($str, $i, 1);
+                if (null == $c || !is_numeric($c)) {
+                    --$i;
+                    break;
+                }
+                $id .= substr($str, $i, 1);
+                if ($i === strlen($str)) {
+                    break;
+                }
+            }
+            $packet->id = intval($id);
+        }
+
+        // look up json data
+        if (substr($str, ++$i, 1)) {
+            $packet->data = json_decode(substr($str, $i), true);
+        }
+
+        return $packet;
     }
 }
