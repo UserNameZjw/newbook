@@ -51,6 +51,7 @@ class ComposerStaticInitd1dc1b802ae72070514a3aa5aa161489
             'Psr\\Http\\Message\\' => 17,
             'Psr\\Container\\' => 14,
             'Psr\\Cache\\' => 10,
+            'Predis\\' => 7,
         ),
         'L' => 
         array (
@@ -137,6 +138,10 @@ class ComposerStaticInitd1dc1b802ae72070514a3aa5aa161489
         'Psr\\Cache\\' => 
         array (
             0 => __DIR__ . '/..' . '/psr/cache/src',
+        ),
+        'Predis\\' => 
+        array (
+            0 => __DIR__ . '/..' . '/predis/predis/src',
         ),
         'League\\Flysystem\\Cached\\' => 
         array (

@@ -56,10 +56,7 @@ class Api extends BookBase
                     foreach ($back['list'] as $key => $value){
 
                         // 查询定时器是否启动，如果没有 则立即设置为启动状态
-                        $timer = $redis->get('timer');
-                        if(!$timer){
-                            $redis->set('timer',true);
-                        }
+                        $timer = $redis->setnx('timer',true);
 
                         $arr = [
                             'config' => $urlBack['book'],
@@ -67,19 +64,19 @@ class Api extends BookBase
                             'timer'  => !empty($timer) ? $timer : false
                         ];
 
-
-                        // 设置一次3个月有效期的 key 用于更新本地redis 书籍搜索
-                         $redis->setex($data['config'].':searchEx:'.md5($data['searchkey']),7257600,true);
-                         $redis->sadd($data['config'].':search:'.md5($data['searchkey']),$value['id']);
-
-                         $redis->lpush('uplist',$data['config'].':config:'.$value['id']);
-
+                        $back['msg'] = $timer;
                          // 投递到 task
                          try {
                              $this->bookTask($arr);
                          } catch (\Exception $e){
                              $back['msg'] = 'task 异常'.$e->getMessage();
                          }
+
+                        // 设置一次3个月有效期的 key 用于更新本地redis 书籍搜索
+                        $redis->setex($data['config'].':searchEx:'.md5($data['searchkey']),7257600,true);
+                        $redis->sadd($data['config'].':search:'.md5($data['searchkey']),$value['id']);
+
+                        $redis->lpush('uplist',$data['config'].':config:'.$value['id']);
 
                     }
                 } else {

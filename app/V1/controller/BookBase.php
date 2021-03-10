@@ -3,7 +3,7 @@
 
 namespace app\V1\controller;
 
-
+use Predis\Client;
 use think\facade\Config;
 use think\facade\Request as TpRequest;
 use think\facade\Cache;
@@ -247,7 +247,7 @@ class BookBase
 
     /**
      * 获取 redis 类 方便配置
-     * @return \think\cache\Driver
+     * @return \Predis\Client
      */
     public function getRedisClient()
     {
