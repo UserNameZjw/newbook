@@ -39,7 +39,7 @@ class BookTask extends BookBase
             });
 
             // 启动定时器
-            if(!$data['timer']){
+            if($data['timer']){
                 $this->startTimer();
             }
         }
@@ -74,7 +74,6 @@ class BookTask extends BookBase
     /**
      * 处理详情页面所有能抓的数据
      * @param $data
-     * @throws \GuzzleHttp\Exception\GuzzleException
      */
 
     public function details($data)
@@ -123,7 +122,6 @@ class BookTask extends BookBase
     /**
      * 储存章节内容
      * @param $data
-     * @throws \GuzzleHttp\Exception\GuzzleException
      */
     public function article($data)
     {

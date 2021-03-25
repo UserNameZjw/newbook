@@ -64,7 +64,6 @@ class Api extends BookBase
                             'timer'  => !empty($timer) ? $timer : false
                         ];
 
-                        $back['msg'] = $timer;
                          // 投递到 task
                          try {
                              $this->bookTask($arr);
