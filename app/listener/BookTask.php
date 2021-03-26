@@ -117,37 +117,7 @@ class BookTask extends BookBase
 
         });
     }
-
-
-    /**
-     * 储存章节内容
-     * @param $data
-     */
-    public function article($data)
-    {
-
-//        $action  = __FUNCTION__;
-//        $urlBack = $this->getActionConfig($action,$data[0]);
-
-
-
-//        $back    = $this->getHtmlList($urlBack,$data);
-//
-//        // 循环数据
-//        foreach ($data as  $key => $value){
-//            go(function () use ($urlBack,$back,$key,$value){
-//
-//                $redis = $this->getRedisClient();
-//                // 查询title
-//                $title = $redis->hget($urlBack['book'].':'.$value['id'],$value['section']);
-//
-//                // 抓取内容存入redis
-//                $redis->hsetnx($urlBack['book'].':'.$value['id'].':'.$value['section'],'title',$title);
-//                $redis->hsetnx($urlBack['book'].':'.$value['id'].':'.$value['section'],'content',$back[$value['section']]);
-//
-//            });
-//        }
-    }
+    
 
     /**
      * 启动定时器
