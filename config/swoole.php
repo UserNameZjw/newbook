@@ -20,7 +20,7 @@ return [
 
             'reactor_num'           => 2,
             'worker_num'            => 4,
-            'task_worker_num'       => 200,
+            'task_worker_num'       => 128,
 
             'enable_static_handler' => true,
             'document_root'         => root_path('public'),

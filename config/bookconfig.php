@@ -4,7 +4,7 @@ return [
     // 新章定时配置 
     'Timer'     => [
         'tally' => 1000,
-        'rows'  => 30
+        'rows'  => 10000
     ],
 
     // 定时执行自动采集,定时间隔在 config/timer 控制

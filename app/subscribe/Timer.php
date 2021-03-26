@@ -68,8 +68,7 @@ class Timer
                             return ;
                         }
     
-                        echo '暂无数据，休眠3秒'.PHP_EOL;
-                        sleep(3);
+                        echo '暂无数据'.PHP_EOL;
                         $i++;
                     });
                 }
