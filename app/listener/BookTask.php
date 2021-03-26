@@ -113,11 +113,9 @@ class BookTask extends BookBase
                     $redis->zadd('queue',microtime(true),$urlBack['book'].':'.$data['id'].':'.$value['sectionId']);
                 }
             }
-
-
         });
     }
-    
+
 
     /**
      * 启动定时器
