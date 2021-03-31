@@ -46,13 +46,16 @@ class Api extends BookBase
                 $searchEx   = $redis->get($data['config'].':searchEx:'.md5($data['searchkey']));
                 if($searchEx){
                     $search = $redis->smembers($data['config'].':search:'.md5($data['searchkey']));
+                } else {
+                    // 设置一次3个月有效期的 key 用于更新本地redis 书籍搜索
+                    $redis->setex($data['config'].':searchEx:'.md5($data['searchkey']),7257600,true);
                 }
 
                 if(empty($search)){
                     // 获取相关配置
                     $urlBack      = $this->getActionConfig(Request::action(),$data);
                     $back['list'] = $this->getHtmlList($urlBack);
-                    $redis = $this->getRedisClient();
+
                     foreach ($back['list'] as $key => $value){
 
                         // 查询定时器是否启动，如果没有 则立即设置为启动状态
@@ -61,7 +64,7 @@ class Api extends BookBase
                         $arr = [
                             'config' => $urlBack['book'],
                             'data'   => [$value],
-                            'timer'  => !empty($timer) ? $timer : false
+                            'timer'  => $timer
                         ];
 
                          // 投递到 task
@@ -71,11 +74,14 @@ class Api extends BookBase
                              $back['msg'] = 'task 异常'.$e->getMessage();
                          }
 
-                        // 设置一次3个月有效期的 key 用于更新本地redis 书籍搜索
-                        $redis->setex($data['config'].':searchEx:'.md5($data['searchkey']),7257600,true);
-                        $redis->sadd($data['config'].':search:'.md5($data['searchkey']),$value['id']);
+                         // 设置搜索值
+                         $redis->sadd($data['config'].':search:'.md5($data['searchkey']),$value['id']);
 
-                        $redis->lpush('uplist',$data['config'].':config:'.$value['id']);
+                        // 插入更新列表
+                        $exists = $redis->exists($data['config'].':config:'.$value['id']);
+                        if(!$exists){
+                            $redis->lpush('uplist',$data['config'].':config:'.$value['id']);
+                        }
 
                     }
                 } else {
@@ -144,12 +150,12 @@ class Api extends BookBase
 
                     // 如果是 数据库没有的数据 模拟搜索
                     $proxy = new Proxy();
-                    $data = [
+                    $data  = [
                         'searchtype' => 'novelname',
                         'searchkey'  => $back['title']
                     ];
 
-                    $host= $this->getHost('80');
+                    $host = $this->getHost('80');
 
                     $proxy->proxyMian($host['host'],$host['port'],'search',$data,'/api/'.$this->version.'/');
                 }

@@ -52,15 +52,12 @@ class AutoDown extends BookBase
                         if($bookConfig['uptime'] <> $newTime){
 
                             // 查询定时器是否启动，如果没有 则立即设置为启动状态
-                            $timer = $redis->get('timer');
-                            if(!$timer){
-                                $redis->set('timer',true);
-                            }
+                            $timer = $redis->setnx('timer',true);
 
                             $arr = [
                                 'config' => $urlBack['book'],
                                 'data'   => [$bookConfig],
-                                'timer'  => !empty($timer) ? $timer : false
+                                'timer'  => $timer
                             ];
 
                             // 直接投递到task 统一处理入口
