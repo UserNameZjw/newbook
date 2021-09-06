@@ -46,7 +46,7 @@ class AutoDown extends BookBase
 
                         $redis      = $this->getRedisClient();
                         $bookConfig = $redis->hgetall($bookv);
-                        $newTime    = substr($back['uptime'],9);
+                        $newTime    = substr($back['uptime'],9,10);
 
                         // 如果更新时间跟实际库不一致
                         if($bookConfig['uptime'] <> $newTime){
